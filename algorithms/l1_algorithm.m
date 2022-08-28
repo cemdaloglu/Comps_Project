@@ -25,38 +25,8 @@ function [ x_reconstucted ] = l1_algorithm(A, b_arr)
 end 
 
 
-function [ x_rec_random, x_rec_fourier ] = OMP_algorithm(A_random, b_random, A_fourier, b_fourier)
-end 
 
 
-function [ x_rec_random, x_rec_fourier ] = MP_algorithm(A_random, b_random, A_fourier, b_fourier)
-    x_rec_random_0 = zeros(size(A_random,2), 1);    % initialize 
-    x_rec_fourier_0 = zeros(size(A_fourier,2), 1);
-    r_rand_0 = b_random; 
-    r_fourier_0 = b_fourier;
-    k = 0; 
-    scalarproducts = A_random'*x;
-    residual = x-scalarproducts(3)*dictionary(:,3);
-    scalarproducts = dictionary(:,1:2)'*residual;
-end 
 
 
-function [ x_rec_random, x_rec_fourier ] = IHT_algorithm(A_random, b_random, A_fourier, b_fourier, sparsity_level)
-end 
-
-
-function [ x_rec_random, x_rec_fourier ] = CoSaMP_algorithm(A_random, b_random, A_fourier, b_fourier, sparsity_level)
-end 
-
-
-function [ x_rec_random, x_rec_fourier ] = BT_algorithm(A_random, b_random, A_fourier, b_fourier, sparsity_level)
-end 
-
-
-function [ x_rec_random, x_rec_fourier ] = HTP_algorithm(A_random, b_random, A_fourier, b_fourier)
-end 
-
-
-function [ x_rec_random, x_rec_fourier ] = SP_algorithm(A_random, b_random, A_fourier, b_fourier, sparsity_level)
-end 
 
