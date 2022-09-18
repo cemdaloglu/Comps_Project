@@ -1,68 +1,120 @@
 clear variables;
 close all;
-cvx_quiet TRUE;
+cvx_quiet True;
 %% 
-n = 2^6;
-m = 2^5;
-A_random = randn([m, n]);
-A_random = normc(A_random);
-
-sparse_vector = zeros([n, 1]);
-
-s = 6;
-nnz_values = randn([s, 1]);
-index = randsample(1:length(sparse_vector), s, true);
-sparse_vector(index, 1) = nnz_values;
-
-xx = A_random * sparse_vector;
-b_random = awgn(xx, 10);
+S = load('data3_440.mat');
+A_random = S.trainimages;
+b = S.testimages;
+b_random = b(:, 1);
 %% 
 
 p = 0.1;
-q = 0.1;
-r = 1;
-gamma = 0.1;
+q = 0.5;
+r = 4;
+%gamma = 0.1;
+gamma = 1 /norm(A_random)^2;
 
-x0 = zeros(n, 1);
+x0 = zeros(size(A_random, 2), 1);
 x = x0;
 y = x0;
 
-% gradient
-GradF = @(x) A_random' * (A_random * x - b_random);
-R = @(x) x0 * x; % !! FIX ME  !!
-FBO = @(y) prox(gamma, R(x), y - gamma * GradF(y));
+% 4.1 variables
+e = randn([size(A_random, 1), 1]);
+e = normc(e);
+w = [x0; e];
 
-t = 1;
+idtt = speye(size(A_random, 1));
+B = [A_random, idtt];
 
-its = 1;
-maxits = 10;
-while(its<maxits)
+% w_hat = modified_fista(B, b(:, 1), w, gamma, p, q, r);
+w_hat = fistamod(B, b(:, 1), w, gamma, p, q, r);
+x_hat = w_hat(1:440, 1);
+x_hat(x_hat < 0.001) = 0;
+%%
+function x_sparse = modified_fista(A_random, b_random, x, gamma, p, q, r)
+    % gradient
+    GradF = @(x) A_random' * (A_random * x - b_random);
+
+    % Proxy
+    % lambda = 10;
+    % R = @(x) lambda .* norm(x, 1);
+    % FBO = @(x, y) prox(y - gamma * GradF(y), gamma, R(x));
+
+
+    FBO = @(y) max(y - gamma * GradF(y), gamma);
     
-    x_old = x;
+    tol = 10^(-6);
+    t = 1;
+    y = x;
     
-    x = FBO(y);
-    
-    t_old = t;
-    t = (p + sqrt(q + r * t_old^2)) / 2;
-    a = (t_old - 1) / t;
-    
-    y = x + a * (x - x_old);
-    
-    res = norm(x_old-x, 'fro');
-    
-    
-    if res / prod(n) < tol
-        break;
+    its = 1;
+    maxits = 10;
+    while(its<maxits)
+        
+        x_old = x;
+        
+        x = FBO(y);
+        
+        t_old = t;
+        t = (p + sqrt(q + r * t_old^2)) / 2;
+        a = (t_old - 1) / t;
+        
+        y = x + a * (x - x_old);
+        
+        res = norm(x_old - x, 'fro');
+        
+        
+        if res / prod(440) < tol
+            break;
+        end
+        its = its + 1; 
     end
-    
-    its = its + 1;
-    
+    x_sparse = x;
 end
 %%
-function [x] = prox(gamma, R, input)
-    cvx begin
-        variable x_hat(n, 1)
-        minimize(gamma * R + 1/2 * norm(x_hat - input, 2)^2)
+function x_sparse = fistamod(A_random, b_random, x_sprs, gamma, p, q, r)
+    % gradient
+    GradF = @(x) A_random' * (A_random * x - b_random);
+
+    % Proxy
+    lambda = 10;
+    R = @(x) lambda .* norm(x, 1);
+    FBO = @(x, y) prox(y - gamma * GradF(y), gamma, R(x));
+    
+    tol = 10^(-6);
+    t = 1;
+    x = x_sprs;
+    y = x;
+    
+    its = 1;
+    maxits = 100;
+    while(its<maxits)
+        
+        x_old = x;
+        
+        x = FBO(x, y);
+        
+        t_old = t;
+        t = (p + sqrt(q + r * t_old^2)) / 2;
+        a = (t_old - 1) / t;
+        
+        y = x + a * (x - x_old);
+        
+        res = norm(x_old - x, 'fro');
+        
+        
+        if res / 440 < tol
+            break;
+        end
+        its = its + 1; 
+    end
+    x_sparse = x;
+end
+%%
+function x = prox(input, gamma, R)
+    cvx_begin
+        variable x_hat1(40440, 1)
+        minimize(gamma * R + 1/2 * pow_pos(norm(x_hat1 - input, 2), 2))
     cvx_end
-    x = x_hat;
+    x = x_hat1;
 end
