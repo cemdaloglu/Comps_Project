@@ -1,66 +1,44 @@
 clear all
 %% Project: exercise 1
 
+%% TODO: choose which matrix/ matrices to use fo the algorithms.
+% Only use one at once.
+useRandom = false;
+useFourier = true;
 
-recovery("l1")
+%useRandom = true;
+%useFourier = false;
 
-function recovery(algorithm)
+n = 2^6; 
+   
+% Determine where your m-file's folder is.
+folder = fileparts(which("project_ex1"));
+% Add that folder plus all subfolders to the path.
+addpath(genpath(folder));
 
-
-    % Determine where your m-file's folder is.
-    folder = fileparts(which("project_ex1"));
-    % Add that folder plus all subfolders to the path.
-    addpath(genpath(folder));
-    
-    %%
-    n = 2^6;
+%% TODO COSAMP x_hat8, HTP x_hat7
+recovery("SP", n, useRandom, useFourier, folder)
+ 
+function recovery(algorithm, n, useRandom, useFourier, folder)
     m = n/2;
-    
-    A_random = randnc(m,n);
-    vecnorm(A_random);
-    
-    A_fourier_tmp = dftmtx(n);
-    A_fourier_rowindex = randi([1, n], 1, m);
-    A_fourier_tmp = A_fourier_tmp(A_fourier_rowindex,:);
-    A_fourier = A_fourier_tmp ./ ( sum( ( A_fourier_tmp .* conj(A_fourier_tmp) ).^2 ) ).^0.5; % normalize
-    
-    % Saving the sensors for reproducibility
-    save([folder '/sensors'], "A_random", "A_fourier")
 
-    %% Read in again
-    A_loaded = load('sensors.mat');
-    A_fourier = A_loaded.A_fourier;
-    A_random = A_loaded.A_random;
+    if useRandom
+        [A, ~ , x_true] = generate_and_load_sensors_xtrue(n, folder);
+    elseif useFourier
+        [~, A , x_true] = generate_and_load_sensors_xtrue(n, folder);
+    end
 
     
-    %%
-    nrReps = 100;
-    
-    x_true = zeros(n, m, nrReps);
-    x_recovered_random = zeros(n, m, nrReps);
-    x_recovered_fourier = zeros(n, m, nrReps);
-    %disp(size(x_recovered_random))
+    b_arr = A * x_true;
     
     %% ﻿Make 100 repetitions for each sparsity value s
+    nrReps = 100;
+    x_recovered = zeros(n, m, nrReps);
+
     for nrep = 1:nrReps
      
         fprintf(1,'Iteration %3.0f/%3.0f -> ',nrep,nrReps);
-        
-        %% ﻿For each value of the sparsity 1 ≤ s ≤ m,
-        % ﻿construct a random s-sparse vector x by ﻿drawing the nonzero locations
-        % uniformly at random, and the nonzero values from a Gaussian
-        x_sparse_arr = randnc(n,m);
-        for s = 1:m
-            r = randi([1, n], 1, s);
-            x_sparse_arr(setdiff(1:end,r), s) = 0;
-        end
-
-        x_true(:,:,nrep) = x_sparse_arr;
-    
-        b_fourier_arr = A_fourier * x_sparse_arr;
-        b_random_arr = A_random * x_sparse_arr;
-        
-    
+  
         %% Run algorithm
         % for every problem instance defined by s and recover x^ from
         % measurements b := Ax. Use for all algorithms a
@@ -68,42 +46,96 @@ function recovery(algorithm)
         cvx_quiet TRUE
     
         if strcmp(algorithm, "l1")
-            x_rec_random = l1_algorithm(A_random, b_random_arr);
-            x_rec_fourier = l1_algorithm(A_fourier, b_fourier_arr);
-        elseif strcmp(algorithm, "OMP")
-            x_rec_random  = OMP_algorithm(A_random, b_random_arr);
-            x_rec_fourier = OMP_algorithm(A_fourier, b_fourier_arr);
+            x_rec = l1_algorithm(A, b_arr);
+        elseif strcmp(algorithm, "OMP")  
+            x_rec = OMP_algorithm(A, b_arr);
         elseif strcmp(algorithm, "MP")
-            x_rec_random = MP_algorithm(A_random, b_random_arr);
-            x_rec_fourier = MP_algorithm(A_fourier, b_fourier_arr);
+            x_rec = MP_algorithm(A, b_arr);
         elseif strcmp(algorithm, "IHT")
-            x_rec_random = IHT_algorithm(A_random, b_random_arr, s); % TODO: loop over s
-            x_rec_fourier = IHT_algorithm(A_fourier, b_fourier_arr, s);    
+            x_rec = IHT_algorithm(A, b_arr, s);   
         elseif strcmp(algorithm, "CoSaMP")
-            x_rec_random = CoSaMP_algorithm(A_random, b_random_arr, s);
-            x_rec_fourier = CoSaMP_algorithm(A_fourier, b_fourier_arr, s);    
+            x_rec = CoSaMP_algorithm(A, b_arr);  
         elseif strcmp(algorithm, "BT")
-            x_rec_random = BT_algorithm(A_random, b_random_arr, s);
-            x_rec_fourier = BT_algorithm(A_fourier, b_fourier_arr, s); 
+            x_rec = BT_algorithm(A, b_arr); 
         elseif strcmp(algorithm, "HTP")
-            x_rec_random = HTP_algorithm(A_random, b_random_arr);
-            x_rec_fourier = HTP_algorithm(A_fourier, b_fourier_arr); 
+            x_rec = HTP_algorithm(A, b_arr); 
         elseif strcmp(algorithm, "SP")
-            x_rec_random = SP_algorithm(A_random, b_random_arr, s);
-            x_rec_fourier = SP_algorithm(A_fourier, b_fourier_arr, s); 
+            x_rec = SP_algorithm(A, b_arr); 
         else
             warning('Chose one of "OMP", "MP", "IHT", "CoSaMP", "BT", "HTP", "SP"')
         end
     
         % save in matrix
-        x_recovered_random(:,:,nrep) = x_rec_random;
-        x_recovered_fourier(:,:,nrep) = x_rec_fourier;
-        save(strcat(folder, '/results/' ,algorithm), "x_true", "x_recovered_random", "x_recovered_fourier")
+        x_recovered(:,:,nrep) = x_rec;
+        disp("DONE - saving iteration...")
+        if useRandom
+            save(strcat(folder, '/results/' ,algorithm,"_random"), "x_recovered")
+        elseif useFourier
+            save(strcat(folder, '/results/' ,algorithm,"_fourier"), "x_recovered")
+        end
    
     end
     
-    save(strcat(folder, '/results/' ,algorithm),"x_true", "x_recovered_random", "x_recovered_fourier")
+    if useRandom
+        save(strcat(folder, '/results/' ,algorithm,"_random"), "x_recovered")
+    elseif useFourier
+        save(strcat(folder, '/results/' ,algorithm,"_fourier"), "x_recovered")
+    end
     disp("done")
+end
+
+
+
+
+%% Function to generate the sensor matrices and x_true or read them, 
+% if they already exist 
+% Input: n: number of columns
+function [A_random, A_fourier, x_true] = generate_and_load_sensors_xtrue(n, folder)
+    m = n/2;
+
+    if isfile([folder '/x_true.mat'])
+        %% Read in again
+        disp("Loading x_true matrices...") 
+        x_loaded = load('x_true.mat');
+        x_true = x_loaded.x_true;
+    else
+    %% ﻿For each value of the sparsity 1 ≤ s ≤ m,
+    % ﻿construct a random s-sparse vector x by ﻿drawing the nonzero locations
+    % uniformly at random, and the nonzero values from a Gaussian
+    x_true = randnc(n,m);
+    for s = 1:m
+        r = randi([1, n], 1, s);
+        x_true(setdiff(1:end,r), s) = 0;
+    end
+
+    % Saving the x_true for reproducibility
+    save([folder '/x_true'], "x_true")
+    end
+
+    if isfile([folder '/sensors.mat'])
+        %% Read in again
+        disp("Loading sensor matrices...") 
+        A_loaded = load('sensors.mat');
+        A_fourier = A_loaded.A_fourier;
+        A_random = A_loaded.A_random;
+
+    else
+        disp("Creating and saving sensor matrices...") 
+        A_rand = randnc(m,n);
+        A_random = normc(A_rand);
+
+        % Fourier matrix 
+        A_four = dftmtx(n);
+        A_fourier_norms = splitapply(@norm,A_four,1:size(A_four,2));
+        A_fourier_tmp = A_four./ A_fourier_norms;
+        
+        index = randsample(1:length(A_fourier_tmp), m); % uniformly at random choose m rows 
+        A_fourier = A_fourier_tmp(index, :);
+
+        % Saving the sensors for reproducibility
+        save([folder '/sensors'], "A_random", "A_fourier")
+    end 
+    
 end
 
 %% ﻿plot the averaged normalized recovery error ﻿of the

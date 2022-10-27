@@ -7,6 +7,9 @@ A_random = S.trainimages;
 b = S.testimages;
 b_random = b(:, 1);
 %% 
+% ﻿x ∈ Rn 
+% ﻿b ∈ Rn 
+% ﻿A ∈ Rm×n
 
 p = 0.1;
 q = 0.5;
@@ -14,9 +17,10 @@ r = 4;
 %gamma = 0.1;
 gamma = 1 /norm(A_random)^2;
 
-x0 = zeros(size(A_random, 2), 1);
+x0 = zeros(size(A_random, 1), 1);
 x = x0;
 y = x0;
+%%
 
 % 4.1 variables
 e = randn([size(A_random, 1), 1]);

@@ -1,33 +1,21 @@
 function [ x_reconstructed ] = MP_algorithm(A, b_arr)
 
     [m,n] = size(A);
-    x_rec_saver = zeros(n, m);
-    support_saver = zeros(m, m);
-    eyemat = eye(n);
+    x_reconstructed = zeros(n, m);
+
     for idx = 1:m
-        support=[];
-        res=b_arr(:, idx);
-        while norm(res, 2) > 10^(-6)
+        res = b_arr(:, idx);
+        count = 0;
+        x_hat_4 = zeros(n, 1);
+        while norm(res, 2) > 10^(-6) && count < m
             cor = abs(A' * res);
-            [a, j] = max(cor);
-            support = [support j];
-
-            t = A(:,j)' * res * eyemat(:,j);
-
-           
-
-            x_rec =  x_rec + t * 
-    
-            cvx_begin
-                variable x_rec(size(support, 2), 1)
-                minimize(norm(b_arr(:, idx) - A(:,support) * x_rec, 2))
-            cvx_end
-    
-            res = b_arr(:, idx) - A(:,support) * x_rec;
+            [a, b] = max(cor);
+            A_sup = A(:, b);
+            t = A_sup' * res;
+            x_hat_4(b, :) = x_hat_4(b, :) + t;
+            res = res - t * A_sup;
+            count = count + 1;
         end
-        x_rec_saver(1:size(support, 2), idx) = x_rec;
-        support_saver(idx, 1:size(support, 2)) = support;
+        x_reconstructed(:, idx) = x_hat_4;
     end
-end 
-
-
+end

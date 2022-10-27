@@ -4,15 +4,20 @@ cvx_quiet TRUE;
 %% 
 n = 2^6;
 m = 2^5;
-A_random = randn([m, n]);
-A_random = normc(A_random);
+A_rand = randn([m, n]);
+A_random = normc(A_rand);
 
-A_fourier = dftmtx(n);
+% Fourier matrix 
+A_four = dftmtx(n);
+A_fourier_norms = splitapply(@norm,A_four,1:size(A_four,2));
+A_fourier_tmp = A_four./ A_fourier_norms;
 
-A_fourier = A_fourier./abs(A_fourier);
+index = randsample(1:length(A_fourier_tmp), m); % uniformly at random choose m rows 
+A_fourier = A_fourier_tmp(index, :);
 
-index = randsample(1:length(A_fourier), m);
-A_fourier = A_fourier(index, :);
+%%
+
+
 
 sparse_vector = zeros([n, m]);
 for s = 1:m
@@ -22,6 +27,7 @@ for s = 1:m
 end
 b_fourier_arr = A_fourier * sparse_vector;
 b_random_arr = A_random * sparse_vector;
+
 %% l1-minimization, fourier
 x_hat1_saver = zeros(n, m);
 
