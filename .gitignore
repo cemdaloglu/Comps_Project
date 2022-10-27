@@ -31,4 +31,9 @@ Temporary Items
 # iCloud generated files
 *.icloud
 
+### ignore face dataset 
+*.asv
+*.zip
+**/Ex2/data/
+
 # End of https://www.toptal.com/developers/gitignore/api/macos
