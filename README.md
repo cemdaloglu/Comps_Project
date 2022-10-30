@@ -23,8 +23,8 @@ Furthermore, we observed that running the algorithms took a lot of time, this mi
 ## Fourier matrix 
 - SP only good for really sparse signals. 
 - CoSaMP reconstruction is also not so good and the error remains quite constant. 
-![Reconstructed image](Ex1/random.png)
-![Reconstructed image](Ex1/fourier.png)
+![random plot](Ex1/random.jpg)
+![fourier plot](Ex1/fourier.jpg)
 
 
 # Ex2
