@@ -3,11 +3,13 @@ clear all
 
 %% TODO: choose which matrix/ matrices to use fo the algorithms.
 % Only use one at once.
-useRandom = false;
-useFourier = true;
+%useRandom = false;
+%useFourier = true;
 
-%useRandom = true;
-%useFourier = false;
+useRandom = true;
+useFourier = false;
+
+rep_start = 1;
 
 n = 2^6; 
    
@@ -16,26 +18,40 @@ folder = fileparts(which("project_ex1"));
 % Add that folder plus all subfolders to the path.
 addpath(genpath(folder));
 
-%% TODO COSAMP x_hat8, HTP x_hat7
-recovery("SP", n, useRandom, useFourier, folder)
+%% Call the algorithm 
+recovery("IHT", n, useRandom, useFourier, folder, rep_start)
  
-function recovery(algorithm, n, useRandom, useFourier, folder)
+function recovery(algorithm, n, useRandom, useFourier, folder, rep_start)
     m = n/2;
+
+    % ﻿Make 100 repetitions for each sparsity value s
+    nrReps = 100;
+    disp(strcat(folder, '/results/', algorithm, '_fourier.mat'))
 
     if useRandom
         [A, ~ , x_true] = generate_and_load_sensors_xtrue(n, folder);
+        if isfile(strcat(folder, '/results/', algorithm, '_random.mat'))
+            disp("Loading x_recovered random...")
+            x_rec = load(strcat(algorithm, '_random.mat'));
+            x_recovered = x_rec.x_recovered;
+        else
+            x_recovered = zeros(n, m, nrReps);
+        end
+
     elseif useFourier
         [~, A , x_true] = generate_and_load_sensors_xtrue(n, folder);
+        if isfile(strcat(folder, '/results/', algorithm, '_fourier.mat'))
+            disp("Loading x_recovered fourier ...")
+            x_rec = load(strcat(algorithm, '_fourier.mat'));
+            x_recovered = x_rec.x_recovered;
+        else 
+            x_recovered = zeros(n, m, nrReps);
+        end
     end
 
-    
     b_arr = A * x_true;
-    
-    %% ﻿Make 100 repetitions for each sparsity value s
-    nrReps = 100;
-    x_recovered = zeros(n, m, nrReps);
-
-    for nrep = 1:nrReps
+  
+    for nrep = rep_start:nrReps
      
         fprintf(1,'Iteration %3.0f/%3.0f -> ',nrep,nrReps);
   
@@ -52,7 +68,7 @@ function recovery(algorithm, n, useRandom, useFourier, folder)
         elseif strcmp(algorithm, "MP")
             x_rec = MP_algorithm(A, b_arr);
         elseif strcmp(algorithm, "IHT")
-            x_rec = IHT_algorithm(A, b_arr, s);   
+            x_rec = IHT_algorithm(A, b_arr);   
         elseif strcmp(algorithm, "CoSaMP")
             x_rec = CoSaMP_algorithm(A, b_arr);  
         elseif strcmp(algorithm, "BT")
@@ -137,6 +153,3 @@ function [A_random, A_fourier, x_true] = generate_and_load_sensors_xtrue(n, fold
     end 
     
 end
-
-%% ﻿plot the averaged normalized recovery error ﻿of the
-% different reconstruction algorithms for each s
