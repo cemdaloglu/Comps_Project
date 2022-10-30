@@ -1,6 +1,7 @@
 # Compressed Sensing Project
 
-Cem Daloglu and Lia Schmid 
+Cem Daloglu (3706511) and Lia Schmid (3667760)
+
 Summer Term 2022 - Stefania Petra
 
 
@@ -22,10 +23,12 @@ Furthermore, we observed that running the algorithms took a lot of time, this mi
 ## Fourier matrix 
 - SP only good for really sparse signals. 
 - CoSaMP reconstruction is also not so good and the error remains quite constant. 
+![Reconstructed image](Ex1/random.png)
+![Reconstructed image](Ex1/fourier.png)
 
 
 # Ex2
-With a lambda value of 10 we achieved reasonably good results using the smallest dataset. 
+With a lambda value of 10 we achieved reasonably good results using the smallest dataset. Still, we got 4 images in which the face could not be reconstructed. 
 ![Reconstructed image](Ex2/reconstruction.png)
 
 
